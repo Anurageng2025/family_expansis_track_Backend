@@ -1,0 +1,107 @@
+// Prisma Schema for Family Expense Tracker
+// This defines the database structure
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Families table
+model Family {
+  id          String   @id @default(uuid())
+  familyName  String   @map("family_name")
+  familyCode  String   @unique @map("family_code") // Unique code for family login
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("families")
+}
+
+// Users table
+model User {
+  id           String   @id @default(uuid())
+  familyId     String   @map("family_id")
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(MEMBER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  incomes  Income[]
+  expenses Expense[]
+  tokens   RefreshToken[]
+
+  @@map("users")
+}
+
+// User roles enum
+enum UserRole {
+  ADMIN  // Family owner/admin
+  MEMBER // Regular family member
+}
+
+// Incomes table
+model Income {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  amount    Float
+  category  String
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("incomes")
+}
+
+// Expenses table
+model Expense {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  amount    Float
+  category  String
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
+// OTP Verification table
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_verification")
+}
+
+// Refresh Tokens table
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
